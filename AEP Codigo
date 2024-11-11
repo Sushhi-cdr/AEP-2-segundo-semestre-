@@ -1,0 +1,337 @@
+#include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
+#include <time.h>
+#include <conio.h>
+
+FILE *arquivo;
+
+void login();
+void Slogin(char nome[30]);
+void criaConta();
+void criptografia(char se[30],int key);
+void alterarSenha(char conta[30]);
+void apagarConta(char conta[30]);
+void listagem();
+
+
+int main(){
+    system("cls");
+    int escolha;
+    do{
+    printf("1-Login \n2-Cria conta \n3-Listagem de usuarios \n4-Sair\n");
+    scanf("%d",&escolha);
+
+    switch (escolha)
+    {
+    case 1:
+        login();
+        break;
+        
+    case 2:
+        criaConta();
+        break;
+
+    case 3:
+        listagem();
+        break;
+
+    case 4:
+        system("cls");
+        break;
+
+    default:
+        printf("Digite uma escolha valida!");
+        break;
+    }
+    }while(escolha!=4);
+    
+    return 0;
+}
+
+
+void login() {
+    system("cls");
+    arquivo = fopen("usuarios.txt", "r");
+    if (arquivo == NULL) {
+        printf("Erro ao abrir o arquivo.\n");
+        return;
+    }
+
+    char linha[200], nome[30], senha[30], nomeC[30], senhaC[30], chave[4];
+    int key;
+    printf("Nome: ");
+    fflush(stdin);
+    fgets(nome, sizeof(nome), stdin);
+    nome[strcspn(nome, "\n")] = '\0';
+    char *t;
+    while (fgets(linha, sizeof(linha), arquivo) != NULL) {
+        t = strtok(linha,":");
+        t = strtok(NULL,"|");
+        strcpy(nomeC,t);
+        if(strcmp(nomeC,nome)==0){
+            t = strtok(NULL,":");
+            t = strtok(NULL,"|");
+            strcpy(senhaC,t);
+
+            t = strtok(NULL,":");
+            t = strtok(NULL,"|");
+            strcpy(chave,t);
+            key = atoi(chave);
+            break;
+        }
+    }
+    if(strcmp(nomeC,nome)!=0){
+        printf("Usuario nao encontrado\n");
+    }else{
+        printf("Senha: ");
+        fflush(stdin); 
+        fgets(senha,sizeof(senha),stdin);
+        senha[strcspn(senha, "\n")] = '\0';
+        criptografia(senha,key);
+        
+        if(strcmp(senha,senhaC)==0){
+            printf("Sucesso no login");
+            fclose(arquivo);
+            printf("\n--------------------------\n");
+            Slogin(nome);
+        }
+    }
+    fclose(arquivo);
+}
+
+
+void Slogin(char nome[30]){
+    system("cls");
+    int escolha;
+    printf("Bem vindo %s",nome);
+    do{
+    printf("\n1-Alterar senha \n2-Para exluir conta \n3-Sair da conta\n");
+    scanf("%d",&escolha);
+    switch (escolha)
+    {
+        case 1:
+            alterarSenha(nome);
+        break;
+            
+        case 2:
+            apagarConta(nome);
+            escolha=3;
+            printf("\n--------------------------\n");
+        break;
+
+        case 3:
+            printf("\n--------------------------\n");
+        break;
+    
+    default:
+        printf("\nDigite uma escolha valida!");
+        break;
+    }
+    }while(escolha!=3);
+}
+
+
+void criaConta(){
+    system("cls");
+    arquivo = fopen("usuarios.txt","r");
+    if(arquivo == NULL){
+        printf("Erro ao abrir o arquivo.\n");
+        return;
+    }
+
+    char nome[30],senha[30],linha[200],nomeC[30];
+    int key;
+    do{
+    printf("Nome: ");
+    fflush(stdin); 
+    fgets(nome,sizeof(nome),stdin);
+    nome[strcspn(nome, "\n")] = '\0';
+    char *t;
+    while (fgets(linha, sizeof(linha), arquivo)) {
+        t = strtok(linha,":");
+        t = strtok(NULL,"|");
+        strcpy(nomeC,t);
+        if(strcmp(nomeC,nome)==0){
+            printf("Esse usuario ja existe!\n");
+            break;
+        }
+    }
+    
+    }while(strcmp(nomeC,nome)==0);
+    fclose(arquivo);
+
+    arquivo = fopen("usuarios.txt","a");
+    if(arquivo == NULL){
+        printf("Erro ao abrir o arquivo.\n");
+        return;
+    }
+        printf("Senha: ");
+        fflush(stdin); 
+        fgets(senha,sizeof(senha),stdin);
+        senha[strcspn(senha, "\n")] = '\0';
+    while(strlen(senha)<8){
+        printf("A senha precisa ter o minimo 8 digitos: ");
+        fgets(senha,sizeof(senha),stdin);
+        senha[strcspn(senha, "\n")] = '\0';
+    }
+    srand (time(NULL));
+    key =rand()% 99;
+    criptografia(senha,key);
+
+    fprintf(arquivo,"Nome:%s|Senha:%s|Key:%d\n",nome,senha,key);
+    fclose(arquivo);
+
+    printf("\nConta criada!");
+    printf("\n--------------------------\n");
+
+}
+
+
+void criptografia(char se[30],int key){
+    int n[30],i;
+    for(i=0;i<strlen(se);i++){
+        n[i]=se[i];
+        n[i]=n[i]*(key*i+1);
+        while(n[i]<32 || n[i]>126){
+            if(n[i]<32){
+                n[i]+=94;
+            }
+            if(n[i]>126){
+                n[i]-=94;
+            }
+        }
+        se[i]=n[i];
+    }
+
+}
+
+
+void alterarSenha(char conta[30]){
+    arquivo = fopen("usuarios.txt", "r");
+    if (arquivo == NULL) {
+    printf("Erro ao abrir o arquivo.\n");
+    return;
+    }
+    char a[200],*t,contaC[30];
+    int linhaF=0;
+    while (fgets(a, sizeof(a), arquivo) != NULL) {
+        t = strtok(a,":");
+        t = strtok(NULL,"|");
+        strcpy(contaC,t);
+        linhaF++;
+            if(strcmp(contaC,conta)==0){
+                break;
+            }
+    }
+    fclose(arquivo);
+
+    char senha[30],tem[200];
+    int key;
+    printf("Senha: ");
+    fflush(stdin); 
+    fgets(senha,sizeof(senha),stdin);
+    senha[strcspn(senha, "\n")] = '\0';
+    while(strlen(senha)<8){
+        printf("A senha precisa ter o minimo 8 digitos: ");
+        fgets(senha,sizeof(senha),stdin);
+        senha[strcspn(senha, "\n")] = '\0';
+    }
+    srand (time(NULL));
+    key =rand()% 99;
+    criptografia(senha,key);
+
+    sprintf(tem,"Nome:%s|Senha:%s|Key:%d\n",conta,senha,key);
+    fclose(arquivo);
+
+
+
+    arquivo = fopen("usuarios.txt", "r");
+    FILE *temp = fopen("temp.txt", "w");
+
+    if (arquivo == NULL || temp == NULL) {
+        printf("Erro ao abrir o arquivo.\n");
+        return;
+    }
+
+    char b[200];
+    int linha=1;
+
+    while (fgets(b,sizeof(b), arquivo) != NULL) {
+        if (linha!=linhaF) {
+            fputs(b,temp);
+        }else{
+            fputs(tem,temp);
+        }
+        linha++;
+    }
+    fclose(arquivo);
+    fclose(temp);
+    remove("usuarios.txt");
+    rename("temp.txt", "usuarios.txt");
+}
+
+
+void apagarConta(char conta[30]) {
+    arquivo = fopen("usuarios.txt", "r");
+    if (arquivo == NULL) {
+    printf("Erro ao abrir o arquivo.\n");
+    return;
+    }
+    char a[200],*t,contaC[30];
+    int linhaF=0;
+    while (fgets(a, sizeof(a), arquivo) != NULL) {
+        t = strtok(a,":");
+        t = strtok(NULL,"|");
+        strcpy(contaC,t);
+        linhaF++;
+            if(strcmp(contaC,conta)==0){
+                break;
+            }
+    }
+    fclose(arquivo);
+
+    arquivo = fopen("usuarios.txt", "r");
+    FILE *temp = fopen("temp.txt", "w");
+
+    if (arquivo == NULL || temp == NULL) {
+        printf("Erro ao abrir o arquivo.\n");
+        return;
+    }
+
+    char b[200];
+    int linha=1;
+
+    while (fgets(b,sizeof(b), arquivo) != NULL) {
+        if (linha!=linhaF) {
+            fputs(b,temp);
+        }
+        linha++;
+    }
+    fclose(arquivo);
+    fclose(temp);
+    remove("usuarios.txt");
+    rename("temp.txt", "usuarios.txt");
+}
+
+
+void listagem(){
+    system("cls");
+    arquivo = fopen("usuarios.txt", "r");
+    if (arquivo == NULL) {
+        printf("Erro ao abrir o arquivo.\n");
+        return;
+    }
+
+    char linha[200], nomeC[30];
+    char *t,lista=0;
+    while (fgets(linha, sizeof(linha), arquivo) != NULL) {
+        t = strtok(linha,":");
+        t = strtok(NULL,"|");
+        strcpy(nomeC,t);
+        lista++;
+        printf("%do Usuario:%s\n",lista,nomeC);
+    }
+    printf("\n--------------------------\n");
+    fclose(arquivo);
+}
